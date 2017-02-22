@@ -1,7 +1,7 @@
 {
-  "name": "node-js-getting-started",
+  "name": "Prototype Studio Display Site",
   "version": "0.2.5",
-  "description": "A sample Node.js app using Express 4",
+  "description": "A Portfolio Website that uses an iPad to drive the content that is being showed.",
   "engines": {
     "node": "5.9.1"
   },
