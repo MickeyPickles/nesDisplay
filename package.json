@@ -1,5 +1,5 @@
 {
-  "name": "Prototype Studio Display Site",
+  "name": "prototypeStudioDisplay",
   "version": "0.2.5",
   "description": "A Portfolio Website that uses an iPad to drive the content that is being showed.",
   "engines": {

@@ -25,3 +25,18 @@
     .jumbotron .lang-logo img {
       max-width: 100%; }
 
+
+/*TEST STYLING*/
+
+#projectName{
+  font-family: "HelveticaNeue-Regular", "Helvetica Neue Regular", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-weight: 300;
+  font-size: 28pt;
+}
+
+#rgaOffice{
+  font-family: "HelveticaNeue-Regular", "Helvetica Neue Regular", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-weight: 300;
+  font-size: 28pt;
+  text-align: right;
+}
