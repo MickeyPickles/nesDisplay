@@ -36,9 +36,7 @@ io.on('connection', function(socket){
 
   socket.on('project', function(data){
 
-    console.log("PROJECT");
-    console.log(data);
-
+    console.log("PROJECT  " + data);
     io.emit('project', data);
 
   });
@@ -50,6 +48,18 @@ io.on('connection', function(socket){
 
     io.emit('video', data);
 
+  });
+
+  socket.on('switchPlaylistProject', function(data){
+    console.log('switchPlaylistProject');
+    console.log(data);
+    io.emit('switchPlaylistProject', data);
+  });
+
+  socket.on('playReel', function(data){
+    console.log('playReel');
+    console.log(data);
+    io.emit('playReel', data);
   });
 
   socket.on('disconnect', function(){

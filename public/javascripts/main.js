@@ -23,6 +23,21 @@ var projectOffice = [];
 var projectVideo = [];
 var currentProjectIndex = 0;
 
+// TIMEOUT VARIABLES
+
+var reelTimeout = '';
+var reelTimeoutTime = 2000;
+
+var playlistTimeout = '';
+var playedPlaylistProjectCount = 0;
+
+var imageTimeoutTime = 3000;
+var videoTimeoutTime = 0;
+
+//  SOCKET IO VARIABLES
+var socket = io('http://localhost:5000');
+
+
 // DIVS
 
 var projectDiv;
@@ -32,17 +47,8 @@ var projectName;
 var clientName;
 var rgaOffice;
 
-// PROTOVARIABLES
-
-
-
-var imageURL = "http://oscardelahera.com/_images/Solace/SolaceHero3By2.jpg";
-// var videoURL = 'https://s3.amazonaws.com/prototypedisplay/test.mp4';
-var gifURL = 'http://oscardelahera.com/_images/Illusion/anim.gif';
-
 (function(){
 
-    var socket = io('http://localhost:5000');
     socket.on('connect', function(){
       console.log("connected")
     });
@@ -62,11 +68,19 @@ var gifURL = 'http://oscardelahera.com/_images/Illusion/anim.gif';
       console.log("project");
       console.log(data);
 
+      clearTimeoutCalled(reelTimeout);
+
       awsS3.matchProjectNameToIndex(projectTitles, data.toString(), function(projectFound, index){
         console.log(projectFound)
         if(projectFound == true){
           currentProjectIndex = index;
           setProjectInformation();
+
+          // playlist timeout and variables
+          setTimeout(function(){
+            playedPlaylistProjectCount = 0;
+            setPlaylistTimeout();
+          },1000);
         }
         else{
           // PROJECT NOT FOUND
@@ -78,14 +92,18 @@ var gifURL = 'http://oscardelahera.com/_images/Illusion/anim.gif';
       console.log("video");
       console.log(data);
 
+      // resetReelTimeout();
+
       if(data == "pauseVideo"){
         // PAUSE
         projectVideoDiv.pause();
+        pauseVideoTimeout();
 
       }
       else{
         // PLAY
         projectVideoDiv.play();
+        restartVideoTimeout();
       }
     });
 
@@ -106,8 +124,7 @@ var gifURL = 'http://oscardelahera.com/_images/Illusion/anim.gif';
               projectOffice = s3RgaOffces;
               projectInformation = s3ProjectInformation;
               projectVideo = s3ProjectVideo;
-              console.log("!!")
-              console.log(s3ProjectVideo);
+
               awsS3.getProjectURLS(data, projectVideo, function(s3ProjectData,s3ProjectVideoURL){
 
                 projectData = s3ProjectData;
@@ -121,11 +138,6 @@ var gifURL = 'http://oscardelahera.com/_images/Illusion/anim.gif';
           });
       })
     });
-    // getProjectFolders();
-    // addVideoDiv();
-
-
-
 })();
 
 // DISPLAY FUNCTIONS
@@ -200,6 +212,7 @@ function addProjectVideo(){
   projectVideoDiv.style.top = 0;
   projectVideoDiv.style.zIndex = 100;
   projectVideoDiv.autoplay = true;
+  projectVideoDiv.poster = projectData[currentProjectIndex];
   document.body.appendChild(projectVideoDiv);
 
   videoSource = document.createElement("source");
@@ -227,14 +240,113 @@ function setProjectInformation(){
   if(projectVideo[currentProjectIndex] == 'true'){
     console.log("!!");
     addProjectVideo();
-    projectVideoDiv.poster = projectData[currentProjectIndex];
-    projectDiv.style.background = '';
-    // videoSource.src = projectVideoURL[currentProjectIndex];
-    // videoSource.load()
-    // projectVideoDiv.play();
-    // projectVideoDiv.style.display = '';
+    projectDiv.style.background = ''
   }
   else{
     projectDiv.style.background = "url("+projectData[currentProjectIndex]+") no-repeat center";
   }
+}
+
+// MARK: PLAYLIST TIMEOUT FUNCTIONS
+
+function nextItemOnPlaylist(){
+
+  // INCREMENT PROJECTCOUNT
+
+  playedPlaylistProjectCount += 1;
+  currentProjectIndex += 1;
+
+  if(playedPlaylistProjectCount != (projectTitles.length - 1)){
+
+    if(currentProjectIndex > (projectTitles.length - 1)){
+      currentProjectIndex = 1;
+    }
+
+    setProjectInformation();
+
+    socket.emit("switchPlaylistProject", currentProjectIndex);
+
+    setTimeout(function(){
+      setPlaylistTimeout();
+    }, 500);
+
+  }
+  else{
+    console.log("SETTING REEL TIMEOUT");
+    resetReelTimeout();
+  }
+}
+
+function setPlaylistTimeout(){
+
+  // CLEAR THE TIMEOUT IF IT EXISTS.
+
+  clearTimeoutCalled(playlistTimeout);
+
+  // DETERMINE PLAYLIST TIMEOUT;
+
+  var itemTimeout = 0;
+
+  if(projectVideo[currentProjectIndex] == 'true'){
+    itemTimeout = projectVideoDiv.duration * 1000 + 4500; // add 5 seconds to the timeout
+  }
+  else{
+    itemTimeout = imageTimeoutTime;
+  }
+
+  console.log("TIMEOUT " + itemTimeout);
+
+  // SET NEW TIMEOUT;
+
+  playlistTimeout = setTimeout(function(){
+    console.log("COUNT " + playedPlaylistProjectCount)
+    nextItemOnPlaylist();
+
+  }, itemTimeout);
+
+}
+
+function clearTimeoutCalled(timeoutName){
+  if(timeoutName != ''){
+    clearTimeout(timeoutName);
+  }
+}
+
+// MARK: PAUSE/PLAY TIMEOUT FUNCTIONS
+
+function pauseVideoTimeout(){
+  clearTimeoutCalled(playlistTimeout);
+  resetReelTimeout();
+  console.log("PAUSE");
+
+}
+
+function restartVideoTimeout(){
+  clearTimeoutCalled(reelTimeout);
+
+  // DETERMINE REMAINING TIME LEFT OF VIDEO AND SUBTRACT IT FROM THE TOTAL AND ADD 4.5 SECONDS.
+  console.log("PLAY");
+  var remainingVideoTimeout = (projectVideoDiv.duration - projectVideoDiv.currentTime)*1000 +4500;
+  playlistTimeout = setTimeout(function(){
+    nextItemOnPlaylist();
+  }, remainingVideoTimeout);
+}
+
+// MARK: REEL TIMEOUT FUNCTIONS
+
+function resetReelTimeout(){
+  clearTimeoutCalled(reelTimeout);
+  setReturnToReelTimeout();
+
+}
+
+
+function setReturnToReelTimeout(){
+
+  reelTimeout = setTimeout(function(){
+    currentProjectIndex = 0;
+    setProjectInformation();
+    socket.emit("playReel", currentProjectIndex);
+  }, reelTimeoutTime);
+
 }

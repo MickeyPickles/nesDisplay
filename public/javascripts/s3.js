@@ -53,42 +53,46 @@ awsS3.prototype.getProjectFolders = function(callbackFunction){
 
 awsS3.prototype.getInformationForAllProjects = function(projectFolders, callbackFunction){
 
-  var jsonFiles = [];
-
   var projectTitles =[];
   var rgaOffices = [];
   var projectInformation =[];
   var projectVideo = [];
   var jsonCount = 0;
 
-  for(i=0; i<projectFolders.length; i++){
-    var url = baseURL + projectFolders[i].toString() + 'info.json'
-    if(i != 0){ // IF REEL.
+  // PUSH REEL INFORMATION
+
+  projectTitles.push('reel');
+  rgaOffices.push('R/GA');
+  projectInformation.push('');
+  projectVideo.push('true');
+
+  // get JSON files
+
+  getJSONFiles(1, projectFolders,baseURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
+
+}
+
+function getJSONFiles(x, projectFolders, aURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction){
+
+  if(x < (projectFolders.length)){
+    console.log(projectFolders[x]);
+    var url = baseURL + projectFolders[x].toString() + 'info.json'
 
     $.getJSON(url, function(data){
-        jsonFiles.push(data);
-        console.log(data.projectTitle)
+      projectTitles.push(data.projectTitle);
+      rgaOffices.push(data.rgaOffice);
+      projectInformation.push(data.projectInformation);
+      projectVideo.push(data.video);
+    }).then(function(){
+      getJSONFiles(x+1, projectFolders,baseURL,projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
+    });
 
-
-          projectTitles.push(data.projectTitle);
-          rgaOffices.push(data.rgaOffice);
-          projectInformation.push(data.projectInformation);
-          projectVideo.push(data.video);
-        }).then(function(){
-          jsonCount++;
-
-          if(jsonCount == (projectFolders.length - 1)){
-            callbackFunction(projectTitles, rgaOffices, projectInformation, projectVideo);
-          }
-        });
-    }
-    else{
-      projectTitles.push('reel');
-      rgaOffices.push('R/GA');
-      projectInformation.push('');
-      projectVideo.push('true');
-    }
   }
+  else{
+    callbackFunction(projectTitles, rgaOffices, projectInformation, projectVideo);
+  }
+
+
 }
 
 awsS3.prototype.getProjectURLS = function(projectFolders, projectVideo, callbackFunction){
