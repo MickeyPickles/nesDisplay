@@ -27,7 +27,6 @@ var currentProjectIndex = 0;
 
 var reelTimeout = '';
 var reelTimeoutTime = 2000;
-
 var playlistTimeout = '';
 var playedPlaylistProjectCount = 0;
 
@@ -44,8 +43,9 @@ var projectDiv;
 var projectVideoDiv;
 var videoSource;
 var projectName;
-var clientName;
+var projectInfoDiv;
 var rgaOffice;
+var rgaCube;
 
 (function(){
 
@@ -117,25 +117,27 @@ var rgaOffice;
 
     awsS3.configure(function(){
       awsS3.getProjectFolders(function(data){
-          awsS3.getInformationForAllProjects(data, function(s3ProjectTitles, s3RgaOffces, s3ProjectInformation, s3ProjectVideo){
+          awsS3.getDisplayList(function(displayList){
+            awsS3.getInformationForAllProjects(displayList, data, function(s3ProjectTitles, s3RgaOffces, s3ProjectInformation, s3ProjectVideo){
 
-              projectFolders = data;
-              projectTitles = s3ProjectTitles;
-              projectOffice = s3RgaOffces;
-              projectInformation = s3ProjectInformation;
-              projectVideo = s3ProjectVideo;
+                projectFolders = data;
+                projectTitles = s3ProjectTitles;
+                projectOffice = s3RgaOffces;
+                projectInformation = s3ProjectInformation;
+                projectVideo = s3ProjectVideo;
 
-              awsS3.getProjectURLS(data, projectVideo, function(s3ProjectData,s3ProjectVideoURL){
+                awsS3.getProjectURLS(data, projectVideo, function(s3ProjectData,s3ProjectVideoURL){
 
-                projectData = s3ProjectData;
-                projectVideoURL = s3ProjectVideoURL;
+                  projectData = s3ProjectData;
+                  projectVideoURL = s3ProjectVideoURL;
 
-                setTimeout(function(){
-                  initPage();
-                }, 500);
+                  setTimeout(function(){
+                    initPage();
+                  }, 500);
 
-              });
-          });
+                });
+            });
+        });
       })
     });
 })();
@@ -145,10 +147,6 @@ var rgaOffice;
 
 function initPage(){
 
-
-
-  console.log(infoDivHeight)
-
   // add the projectDiv (WILL BE A  BACKGROUND IMAGE)
 
   projectDiv = document.createElement('div');
@@ -156,7 +154,7 @@ function initPage(){
   projectDiv.style.position = 'absolute';
   projectDiv.id = "projectDiv"
   projectDiv.style.width = '100vw';
-  projectDiv.style.height = projectDivHeight + 'px';
+  projectDiv.style.height = '100vh' //projectDivHeight + 'px';
   projectDiv.style.top = 0;
   // projectDiv.style.backgroundColor = 'grey';
   projectDiv.style.background = "url("+projectData[currentProjectIndex]+") no-repeat center";
@@ -166,37 +164,63 @@ function initPage(){
 
   // ADD THE INFO DIVS
 
+  projectInfoDiv = document.createElement('div');
+  projectInfoDiv.id = 'projectInfoDiv';
+  projectInfoDiv.style.height = '7.5vh';
+  projectInfoDiv.style.width = '100vw';
+  projectInfoDiv.style.bottom = '0';
+  projectInfoDiv.style.position = 'absolute';
+  projectInfoDiv.style.zIndex = 120;
+  projectInfoDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+  document.body.appendChild(projectInfoDiv);
+
   projectName = document.createElement('div');
   projectName.id = "projectName";
-  projectName.style.width = '30vw';
-  projectName.style.height = infoDivHeight + 'px';
+  projectName.style.width = 'auto';
+  projectName.style.height = 'auto';
   projectName.style.position = 'absolute';
-  projectName.style.bottom = '2.5vw';
+  projectName.style.bottom = '1.325vh';
   projectName.style.left = '2.5vw';
-  // projectName.style.backgroundColor = 'black';
+  projectName.style.zIndex = 120;
+  projectName.style.verticalAlign = 'middle';
   projectName.innerHTML = projectTitles[currentProjectIndex];
-  document.body.appendChild(projectName);
+  projectInfoDiv.appendChild(projectName);
 
-  clientName = document.createElement('div');
-  clientName.id = "clientName";
-  clientName.style.width = '30vw';
-  clientName.style.height = infoDivHeight + 'px';
-  clientName.style.position = 'absolute';
-  clientName.style.bottom = '2.5vw';
-  clientName.style.left = '35vw';
-  clientName.style.backgroundColor = 'red';
-  document.body.appendChild(clientName);
+  // VERTICALLY ALIGN PROJECT NAME
+
+  var projectNameBottom = (0.075*viewHeight - $('#projectName').height())/2;
+  console.log(projectNameBottom);
+  $('#projectName').css('bottom', projectNameBottom);
 
   rgaOffice = document.createElement('div');
   rgaOffice.id = "rgaOffice";
-  rgaOffice.style.width = '30vw';
-  rgaOffice.style.height = infoDivHeight + 'px';
+  rgaOffice.style.width = 'auto';
+  rgaOffice.style.height = 'auto';
   rgaOffice.style.position = 'absolute';
-  rgaOffice.style.bottom = '2.5vw';
-  rgaOffice.style.left = '67.5vw';
-  // rgaOffice.style.backgroundColor = 'blue';
+  rgaOffice.style.bottom = '1.325vh';
+  rgaOffice.style.right = '2.5vw';
+  rgaOffice.style.zIndex = 120;
+ // rgaOffice.style.backgroundColor = 'blue';
   rgaOffice.innerHTML = projectOffice[currentProjectIndex];
-  document.body.appendChild(rgaOffice);
+  projectInfoDiv.appendChild(rgaOffice);
+
+  // VERTICALLY ALIGN RGA OFFICE
+  var rgaOfficeBottom = (0.075*viewHeight - $('#rgaOffice').height())/2;
+  $('#rgaOffice').css('bottom', rgaOfficeBottom);
+
+  rgaCube = document.createElement('div');
+  rgaCube.id = "rgaCube";
+  rgaCube.style.width = '3.5vh';
+  rgaCube.style.height = '3.5vh';
+  rgaCube.style.backgroundColor = 'rgba(232, 16, 48, 1)';
+  rgaCube.style.position = 'absolute';
+  rgaCube.style.bottom = '2vh';
+  rgaCube.style.zIndex = 120;
+  rgaCube.style.display = 'none';
+  projectInfoDiv.appendChild(rgaCube);
+
+  // var newCubePosition = 0.05*viewWidth + $('#rgaOffice').width() + $('#rgaCube').width();
+  // console.log(newCubePosition)
 
   addProjectVideo();
 
@@ -208,8 +232,9 @@ function addProjectVideo(){
   projectVideoDiv.style.position = 'absolute';
   projectVideoDiv.id = "projectVideoDiv"
   projectVideoDiv.style.width = '100vw';
-  projectVideoDiv.style.height = projectDivHeight + 'px';
+  projectVideoDiv.style.height = '100vh'   //projectDivHeight + 'px';
   projectVideoDiv.style.top = 0;
+  projectVideoDiv.style.left = 0;
   projectVideoDiv.style.zIndex = 100;
   projectVideoDiv.autoplay = true;
   projectVideoDiv.poster = projectData[currentProjectIndex];
@@ -219,17 +244,40 @@ function addProjectVideo(){
   videoSource.type = "video/mp4";
   videoSource.src = projectVideoURL[currentProjectIndex];
   projectVideoDiv.appendChild(videoSource);
+
+  if(currentProjectIndex == 0){
+    projectName.style.width = '100vw';
+    projectName.style.left = '0';
+    projectName.style.textAlign = 'center';
+    rgaOffice.style.display =  'none';
+    rgaCube.style.display = 'none';
+  }
+
 }
 
 function removeProjectVideo(){
   var divToRemove = document.getElementById('projectVideoDiv');
   divToRemove.parentNode.removeChild(divToRemove);
+
+  projectName.style.width = 'auto';
+  projectName.style.left = '2.5vw';
+  projectName.style.textAlign = 'left';
+  rgaOffice.style.display =  ''
+  rgaOffice.style.textAlign = 'right';
+  rgaCube.style.display = '';
+
+  // POSITION RGA CUBE BASED ON WIDTH OF RGA OFFICE
+
+
   // document.body.removeChild(projectVideoDiv);
 }
 
 function setProjectInformation(){
   projectName.innerHTML = projectTitles[currentProjectIndex];
   rgaOffice.innerHTML = projectOffice[currentProjectIndex];
+
+  var newCubePosition = 0.015*viewWidth + $('#rgaOffice').width() + $('#rgaCube').width();
+  $('#rgaCube').css('right', newCubePosition);
 
   console.log(projectVideo[currentProjectIndex]);
 
@@ -250,6 +298,8 @@ function setProjectInformation(){
 // MARK: PLAYLIST TIMEOUT FUNCTIONS
 
 function nextItemOnPlaylist(){
+
+  console.log("NEXT ITEM!!");
 
   // INCREMENT PROJECTCOUNT
 
@@ -288,7 +338,7 @@ function setPlaylistTimeout(){
   var itemTimeout = 0;
 
   if(projectVideo[currentProjectIndex] == 'true'){
-    itemTimeout = projectVideoDiv.duration * 1000 + 4500; // add 5 seconds to the timeout
+    itemTimeout = projectVideoDiv.duration * 1000; // add 5 seconds to the timeout
   }
   else{
     itemTimeout = imageTimeoutTime;
@@ -326,7 +376,7 @@ function restartVideoTimeout(){
 
   // DETERMINE REMAINING TIME LEFT OF VIDEO AND SUBTRACT IT FROM THE TOTAL AND ADD 4.5 SECONDS.
   console.log("PLAY");
-  var remainingVideoTimeout = (projectVideoDiv.duration - projectVideoDiv.currentTime)*1000 +4500;
+  var remainingVideoTimeout = (projectVideoDiv.duration - projectVideoDiv.currentTime)*1000;
   playlistTimeout = setTimeout(function(){
     nextItemOnPlaylist();
   }, remainingVideoTimeout);

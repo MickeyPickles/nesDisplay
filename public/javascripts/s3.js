@@ -49,9 +49,23 @@ awsS3.prototype.getProjectFolders = function(callbackFunction){
     });
 }
 
+awsS3.prototype.getDisplayList = function(callbackFunction){
+
+  var prototypeDisplayList = {};
+
+  var url = "	https://s3.amazonaws.com/prototypedisplay/displayList.json"
+
+  $.getJSON(url, function(data){
+    prototypeDisplayList = data;
+  }).then(function(){
+    callbackFunction(prototypeDisplayList);
+  });
+
+}
 
 
-awsS3.prototype.getInformationForAllProjects = function(projectFolders, callbackFunction){
+
+awsS3.prototype.getInformationForAllProjects = function(displayList, projectFolders, callbackFunction){
 
   var projectTitles =[];
   var rgaOffices = [];
@@ -59,32 +73,45 @@ awsS3.prototype.getInformationForAllProjects = function(projectFolders, callback
   var projectVideo = [];
   var jsonCount = 0;
 
+  console.log(displayList.projects);
+
   // PUSH REEL INFORMATION
 
-  projectTitles.push('reel');
+  projectTitles.push('Tap Tablet to Start');
   rgaOffices.push('R/GA');
   projectInformation.push('');
   projectVideo.push('true');
 
   // get JSON files
 
-  getJSONFiles(1, projectFolders,baseURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
+  getJSONFiles(1, displayList.projects, projectFolders,baseURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
 
 }
 
-function getJSONFiles(x, projectFolders, aURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction){
+function getJSONFiles(x, displayList, projectFolders, aURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction){
 
   if(x < (projectFolders.length)){
-    console.log(projectFolders[x]);
     var url = baseURL + projectFolders[x].toString() + 'info.json'
 
     $.getJSON(url, function(data){
-      projectTitles.push(data.projectTitle);
-      rgaOffices.push(data.rgaOffice);
-      projectInformation.push(data.projectInformation);
-      projectVideo.push(data.video);
+
+      console.log(data);
+      for(i =0; i<displayList.length; i++){
+        if(displayList[i] == data.id){
+
+          projectTitles.push(data.projectTitle);
+          rgaOffices.push(data.rgaOffice);
+          projectInformation.push(data.projectInformation);
+          projectVideo.push(data.video);
+
+          break;
+        }
+        else{
+          //DO NOTHING
+        }
+      }
     }).then(function(){
-      getJSONFiles(x+1, projectFolders,baseURL,projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
+      getJSONFiles(x+1, displayList, projectFolders,baseURL,projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
     });
 
   }
