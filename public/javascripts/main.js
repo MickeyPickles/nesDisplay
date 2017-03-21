@@ -28,10 +28,12 @@ var currentProjectIndex = 0;
 var reelTimeout = '';
 var reelTimeoutTime = 2000;
 var playlistTimeout = '';
+var transitionTimeout = '';
 var playedPlaylistProjectCount = 0;
 
 var imageTimeoutTime = 3000;
 var videoTimeoutTime = 0;
+var transitionTime = 1000;
 
 //  SOCKET IO VARIABLES
 var socket = io('http://localhost:5000');
@@ -46,6 +48,8 @@ var projectName;
 var projectInfoDiv;
 var rgaOffice;
 var rgaCube;
+var transitionDiv;
+var transitionInfoDiv;
 
 (function(){
 
@@ -55,6 +59,11 @@ var rgaCube;
 
     socket.on('frontEnd', function(data){
       console.log("FRONT EVENT");
+    });
+
+    socket.on('playReel', function(data){
+      console.log(data);
+      playReel();
     });
 
     socket.on('event', function(data){
@@ -74,7 +83,8 @@ var rgaCube;
         console.log(projectFound)
         if(projectFound == true){
           currentProjectIndex = index;
-          setProjectInformation();
+          showTransitionSlide();
+          // setProjectInformation();
 
           // playlist timeout and variables
           setTimeout(function(){
@@ -103,7 +113,7 @@ var rgaCube;
       else{
         // PLAY
         projectVideoDiv.play();
-        restartVideoTimeout();
+        checkVideoState();
       }
     });
 
@@ -217,10 +227,33 @@ function initPage(){
   rgaCube.style.bottom = '2vh';
   rgaCube.style.zIndex = 120;
   rgaCube.style.display = 'none';
-  projectInfoDiv.appendChild(rgaCube);
+  // projectInfoDiv.appendChild(rgaCube);
 
   // var newCubePosition = 0.05*viewWidth + $('#rgaOffice').width() + $('#rgaCube').width();
   // console.log(newCubePosition)
+
+  transitionDiv = document.createElement('div');
+  transitionDiv.style.position = 'absolute';
+  transitionDiv.id = "transitionDiv"
+  transitionDiv.style.width = '100vw';
+  transitionDiv.style.height = '100vh' //projectDivHeight + 'px';
+  transitionDiv.style.top = 0;
+  transitionDiv.style.zIndex = 200;
+  transitionDiv.style.backgroundColor = 'black';
+  document.body.appendChild(transitionDiv);
+
+  transitionInfoDiv = document.createElement('div');
+  transitionInfoDiv.id = 'transitionInfoDiv';
+  transitionInfoDiv.style.height = '7.5vh';
+  transitionInfoDiv.style.width = '100vw';
+  transitionInfoDiv.style.bottom = '0';
+  transitionInfoDiv.style.position = 'absolute';
+  transitionInfoDiv.style.zIndex = 200;
+  transitionInfoDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+  document.body.appendChild(transitionInfoDiv);
+
+  $('#transitionDiv').fadeOut(0);
+  $('#transitionInfoDiv').fadeOut(0);
 
   addProjectVideo();
 
@@ -251,6 +284,10 @@ function addProjectVideo(){
     projectName.style.textAlign = 'center';
     rgaOffice.style.display =  'none';
     rgaCube.style.display = 'none';
+    projectVideoDiv.loop = true;
+  }
+  else{
+    projectVideoDiv.loop = false;
   }
 
 }
@@ -273,8 +310,9 @@ function removeProjectVideo(){
 }
 
 function setProjectInformation(){
+
   projectName.innerHTML = projectTitles[currentProjectIndex];
-  rgaOffice.innerHTML = projectOffice[currentProjectIndex];
+  rgaOffice.innerHTML =   setOfficeAttributedString();
 
   var newCubePosition = 0.015*viewWidth + $('#rgaOffice').width() + $('#rgaCube').width();
   $('#rgaCube').css('right', newCubePosition);
@@ -295,6 +333,37 @@ function setProjectInformation(){
   }
 }
 
+function setOfficeAttributedString(){
+
+  var attributedString = projectOffice[currentProjectIndex];
+  attributedString = attributedString.replace('R/GA', '<span class="rga">R/GA</span>');
+
+  if(attributedString.includes('x')){
+    attributedString = attributedString.replace('x', '<span class="plus">x</span>');
+  }
+  console.log(attributedString);
+
+  return attributedString;
+}
+
+// MARK:  TRANSITION FUNCTIONS
+
+function showTransitionSlide(){
+
+  clearTimeoutCalled(transitionTimeout);
+
+  // transitionDiv.style.display = '';
+  // transitionInfoDiv.style.display = '';
+  $('#transitionDiv').fadeIn(transitionTime);
+  $('#transitionInfoDiv').fadeIn(transitionTime);
+
+  transitionTimeout = setTimeout(function(){
+    $('#transitionDiv').fadeOut(500);
+    $('#transitionInfoDiv').fadeOut(500);
+    setProjectInformation();
+  }, transitionTime);
+}
+
 // MARK: PLAYLIST TIMEOUT FUNCTIONS
 
 function nextItemOnPlaylist(){
@@ -311,14 +380,15 @@ function nextItemOnPlaylist(){
     if(currentProjectIndex > (projectTitles.length - 1)){
       currentProjectIndex = 1;
     }
-
-    setProjectInformation();
+    showTransitionSlide();
+    // setProjectInformation();
 
     socket.emit("switchPlaylistProject", currentProjectIndex);
 
+    var newPlaylistTimeoutTime = transitionTime + 500;
     setTimeout(function(){
       setPlaylistTimeout();
-    }, 500);
+    }, newPlaylistTimeoutTime);
 
   }
   else{
@@ -338,21 +408,19 @@ function setPlaylistTimeout(){
   var itemTimeout = 0;
 
   if(projectVideo[currentProjectIndex] == 'true'){
-    itemTimeout = projectVideoDiv.duration * 1000; // add 5 seconds to the timeout
+    checkVideoState();
+    // itemTimeout = projectVideoDiv.duration * 1000; // add 5 seconds to the timeout
   }
   else{
     itemTimeout = imageTimeoutTime;
+    playlistTimeout = setTimeout(function(){
+      console.log("COUNT " + playedPlaylistProjectCount)
+      nextItemOnPlaylist();
+
+    }, itemTimeout);
   }
 
   console.log("TIMEOUT " + itemTimeout);
-
-  // SET NEW TIMEOUT;
-
-  playlistTimeout = setTimeout(function(){
-    console.log("COUNT " + playedPlaylistProjectCount)
-    nextItemOnPlaylist();
-
-  }, itemTimeout);
 
 }
 
@@ -392,11 +460,27 @@ function resetReelTimeout(){
 
 
 function setReturnToReelTimeout(){
-
   reelTimeout = setTimeout(function(){
-    currentProjectIndex = 0;
-    setProjectInformation();
     socket.emit("playReel", currentProjectIndex);
-  }, reelTimeoutTime);
 
+  }, reelTimeoutTime);
+}
+
+function playReel(){
+  currentProjectIndex = 0;
+  setProjectInformation();
+  // setProjectInformation();
+}
+
+// MARK: VIDEO FUNCTIONS
+
+function checkVideoState(){
+  if(projectVideoDiv.readyState == 4){
+    restartVideoTimeout()
+  }
+  else{
+    setTimeout(function(){
+      checkVideoState();
+    }, 50);
+  }
 }

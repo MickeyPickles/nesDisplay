@@ -57,8 +57,6 @@ io.on('connection', function(socket){
   });
 
   socket.on('playReel', function(data){
-    console.log('playReel');
-    console.log(data);
     io.emit('playReel', data);
   });
 

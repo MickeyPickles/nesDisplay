@@ -10,6 +10,32 @@ var IdentityPoolId = 'us-east-1:112d0d2f-84a0-4eb1-bb48-f8723b8edd1e';
 var s3;
 var baseURL = '	https://s3.amazonaws.com/prototypedisplay/'
 
+
+// PROTOTYPE DISPLAY PROJECT
+
+class prototypeDisplayProject {
+
+  constructor(title, office, imageURL, video, videoURL){
+
+    this.title = title;
+    this.office = office
+    this.imageURL = imageURL
+    this.video = video;
+    this.videoURL = videoURL;
+
+    return this;
+  }
+}
+
+class prototypeDisplayPlaylist{
+
+  constructor(title, projectsArray){
+    this.title = title;
+    this.projects = projectsArray;
+    return this;
+  }
+}
+
 // the parent of all s3 prototype functions
 var awsS3 = function(){};
 
