@@ -60,6 +60,16 @@ io.on('connection', function(socket){
     io.emit('playReel', data);
   });
 
+  socket.on('playPlayListAtIndex', function(data){
+    console.log(data);
+    io.emit('playPlayListAtIndex', data);
+  });
+
+  socket.on('switchPlaylistProject', function(data){
+    console.log(data);
+    io.emit('switchPlaylistProject', data);
+  });
+
   socket.on('disconnect', function(){
 
     console.log("DISCONNECTED");

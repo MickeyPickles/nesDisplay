@@ -23,6 +23,12 @@ var projectOffice = [];
 var projectVideo = [];
 var currentProjectIndex = 0;
 
+
+var prototypeDisplayList = [];
+var playlistList = [];
+var currentPlaylist = 0;
+var currentPlaylistIndex = 0;
+
 // TIMEOUT VARIABLES
 
 var reelTimeout = '';
@@ -31,7 +37,7 @@ var playlistTimeout = '';
 var transitionTimeout = '';
 var playedPlaylistProjectCount = 0;
 
-var imageTimeoutTime = 3000;
+var imageTimeoutTime = 20000;
 var videoTimeoutTime = 0;
 var transitionTime = 1000;
 
@@ -98,6 +104,29 @@ var transitionInfoDiv;
       });
     });
 
+    socket.on('playPlayListAtIndex', function(data){
+
+      console.log(data);
+
+      clearTimeoutCalled(reelTimeout);
+      showTransitionSlide();
+
+      currentProjectIndex = data.index;
+      for(playlist in playlistList){
+        console.log(playlist);
+        if(playlistList[playlist].title == data.playlist){
+          currentPlaylist = playlistList[playlist];
+
+          // playlist timeout and variables
+          setTimeout(function(){
+            playedPlaylistProjectCount = 0;
+            setProjectInformation();
+            setPlaylistTimeout();
+          },1000);
+        }
+      }
+    });
+
     socket.on('video', function(data){
       console.log("video");
       console.log(data);
@@ -128,7 +157,9 @@ var transitionInfoDiv;
     awsS3.configure(function(){
       awsS3.getProjectFolders(function(data){
           awsS3.getDisplayList(function(displayList){
-            awsS3.getInformationForAllProjects(displayList, data, function(s3ProjectTitles, s3RgaOffces, s3ProjectInformation, s3ProjectVideo){
+            awsS3.getInformationForAllProjects(displayList, data, function(s3ProjectTitles, s3RgaOffces, s3ProjectInformation, s3ProjectVideo, s3PrototypeProjects){
+
+
 
                 projectFolders = data;
                 projectTitles = s3ProjectTitles;
@@ -136,15 +167,24 @@ var transitionInfoDiv;
                 projectInformation = s3ProjectInformation;
                 projectVideo = s3ProjectVideo;
 
-                awsS3.getProjectURLS(data, projectVideo, function(s3ProjectData,s3ProjectVideoURL){
+                awsS3.getProjectURLS(data, projectVideo, s3PrototypeProjects, function(s3ProjectData,s3ProjectVideoURL, prototypeProjects){
 
                   projectData = s3ProjectData;
                   projectVideoURL = s3ProjectVideoURL;
 
-                  setTimeout(function(){
-                    initPage();
-                  }, 500);
+                  prototypeDisplayList = s3PrototypeProjects;
+                  console.log(prototypeDisplayList);
 
+                  awsS3.getPlaylists(function(data){
+                    playlistList = data;
+                    awsS3.getProjectFromDisplayList(prototypeDisplayList, playlistList, function(newPlaylist){
+                      playlistList = newPlaylist;
+                      setTimeout(function(){
+                        initPage();
+                      }, 500);
+
+                    });
+                  });
                 });
             });
         });
@@ -167,7 +207,7 @@ function initPage(){
   projectDiv.style.height = '100vh' //projectDivHeight + 'px';
   projectDiv.style.top = 0;
   // projectDiv.style.backgroundColor = 'grey';
-  projectDiv.style.background = "url("+projectData[currentProjectIndex]+") no-repeat center";
+  projectDiv.style.background = "url("+prototypeDisplayList[currentProjectIndex].imageURL+") no-repeat center";
   // projectDiv.style.backgroundRepeat = 'no-repeat';
   // projectDiv.style.backgroundSize = '100% 100%'
   document.body.appendChild(projectDiv);
@@ -193,7 +233,7 @@ function initPage(){
   projectName.style.left = '2.5vw';
   projectName.style.zIndex = 120;
   projectName.style.verticalAlign = 'middle';
-  projectName.innerHTML = projectTitles[currentProjectIndex];
+  projectName.innerHTML = prototypeDisplayList[currentProjectIndex].title;
   projectInfoDiv.appendChild(projectName);
 
   // VERTICALLY ALIGN PROJECT NAME
@@ -211,7 +251,7 @@ function initPage(){
   rgaOffice.style.right = '2.5vw';
   rgaOffice.style.zIndex = 120;
  // rgaOffice.style.backgroundColor = 'blue';
-  rgaOffice.innerHTML = projectOffice[currentProjectIndex];
+  rgaOffice.innerHTML = prototypeDisplayList[currentProjectIndex].office;
   projectInfoDiv.appendChild(rgaOffice);
 
   // VERTICALLY ALIGN RGA OFFICE
@@ -255,7 +295,7 @@ function initPage(){
   $('#transitionDiv').fadeOut(0);
   $('#transitionInfoDiv').fadeOut(0);
 
-  addProjectVideo();
+  playReel();
 
 }
 
@@ -270,24 +310,36 @@ function addProjectVideo(){
   projectVideoDiv.style.left = 0;
   projectVideoDiv.style.zIndex = 100;
   projectVideoDiv.autoplay = true;
-  projectVideoDiv.poster = projectData[currentProjectIndex];
+
+  if(currentPlaylist != 0) {
+    projectVideoDiv.poster = currentPlaylist.projects[currentProjectIndex].imageURL;
+  }
+  else{
+    console.log("!")
+  projectVideoDiv.poster = prototypeDisplayList[currentProjectIndex].imageURL;
+  }
   document.body.appendChild(projectVideoDiv);
 
   videoSource = document.createElement("source");
   videoSource.type = "video/mp4";
-  videoSource.src = projectVideoURL[currentProjectIndex];
+  if(currentPlaylist != 0) {
+    videoSource.src = currentPlaylist.projects[currentProjectIndex].videoURL;
+  }
+  else{
+    videoSource.src = prototypeDisplayList[currentProjectIndex].videoURL;
+  }
   projectVideoDiv.appendChild(videoSource);
 
-  if(currentProjectIndex == 0){
+  if(currentPlaylist == playlistList[0]){
     projectName.style.width = '100vw';
     projectName.style.left = '0';
     projectName.style.textAlign = 'center';
     rgaOffice.style.display =  'none';
     rgaCube.style.display = 'none';
-    projectVideoDiv.loop = true;
+    // projectVideoDiv.loop = true;
   }
   else{
-    projectVideoDiv.loop = false;
+    // projectVideoDiv.loop = false;
   }
 
 }
@@ -311,31 +363,38 @@ function removeProjectVideo(){
 
 function setProjectInformation(){
 
-  projectName.innerHTML = projectTitles[currentProjectIndex];
-  rgaOffice.innerHTML =   setOfficeAttributedString();
+  if(currentPlaylist != 0) {
+    projectName.innerHTML = currentPlaylist.projects[currentProjectIndex].title;
+    rgaOffice.innerHTML =   setOfficeAttributedString();
 
-  var newCubePosition = 0.015*viewWidth + $('#rgaOffice').width() + $('#rgaCube').width();
-  $('#rgaCube').css('right', newCubePosition);
+    var newCubePosition = 0.015*viewWidth + $('#rgaOffice').width() + $('#rgaCube').width();
+    $('#rgaCube').css('right', newCubePosition);
 
-  console.log(projectVideo[currentProjectIndex]);
+    console.log(currentPlaylist.projects[currentProjectIndex].video);
 
-  if(document.getElementById('projectVideoDiv') != null){
-    removeProjectVideo();
-  }
+    if(document.getElementById('projectVideoDiv') != null){
+      removeProjectVideo();
+    }
 
-  if(projectVideo[currentProjectIndex] == 'true'){
-    console.log("!!");
-    addProjectVideo();
-    projectDiv.style.background = ''
+    if(currentPlaylist.projects[currentProjectIndex].video == 'true'){
+      console.log("!!");
+      addProjectVideo();
+      projectDiv.style.background = ''
+    }
+    else{
+      projectDiv.style.background = "url("+currentPlaylist.projects[currentProjectIndex].imageURL+") no-repeat center";
+    }
   }
   else{
-    projectDiv.style.background = "url("+projectData[currentProjectIndex]+") no-repeat center";
+    projectName.innerHTML = prototypeDisplayList[0].title;
+    addProjectVideo();
   }
+
 }
 
 function setOfficeAttributedString(){
 
-  var attributedString = projectOffice[currentProjectIndex];
+  var attributedString = currentPlaylist.projects[currentProjectIndex].office;
   attributedString = attributedString.replace('R/GA', '<span class="rga">R/GA</span>');
 
   if(attributedString.includes('x')){
@@ -375,10 +434,10 @@ function nextItemOnPlaylist(){
   playedPlaylistProjectCount += 1;
   currentProjectIndex += 1;
 
-  if(playedPlaylistProjectCount != (projectTitles.length - 1)){
+  if(playedPlaylistProjectCount < (currentPlaylist.projects.length)){
 
-    if(currentProjectIndex > (projectTitles.length - 1)){
-      currentProjectIndex = 1;
+    if(currentProjectIndex > (currentPlaylist.projects.length - 1)){
+      currentProjectIndex = 0;
     }
     showTransitionSlide();
     // setProjectInformation();
@@ -399,6 +458,8 @@ function nextItemOnPlaylist(){
 
 function setPlaylistTimeout(){
 
+  console.log("SETTING");
+
   // CLEAR THE TIMEOUT IF IT EXISTS.
 
   clearTimeoutCalled(playlistTimeout);
@@ -407,7 +468,8 @@ function setPlaylistTimeout(){
 
   var itemTimeout = 0;
 
-  if(projectVideo[currentProjectIndex] == 'true'){
+  if(currentPlaylist.projects[currentProjectIndex].video == 'true'){
+    console.log("!");
     checkVideoState();
     // itemTimeout = projectVideoDiv.duration * 1000; // add 5 seconds to the timeout
   }
@@ -467,9 +529,11 @@ function setReturnToReelTimeout(){
 }
 
 function playReel(){
+  console.log("PLAY REEL");
   currentProjectIndex = 0;
+  currentPlaylist = playlistList[0];
   setProjectInformation();
-  // setProjectInformation();
+  setPlaylistTimeout();
 }
 
 // MARK: VIDEO FUNCTIONS
@@ -483,4 +547,92 @@ function checkVideoState(){
       checkVideoState();
     }, 50);
   }
+}
+
+
+
+
+// GRAVEYARD
+function setProjectInformationOLD(){
+
+  projectName.innerHTML = currentPlaylist.projects[currentProjectIndex].title;
+  rgaOffice.innerHTML =   setOfficeAttributedString();
+
+  var newCubePosition = 0.015*viewWidth + $('#rgaOffice').width() + $('#rgaCube').width();
+  $('#rgaCube').css('right', newCubePosition);
+
+  console.log(projectVideo[currentProjectIndex]);
+
+  if(document.getElementById('projectVideoDiv') != null){
+    removeProjectVideo();
+  }
+
+  if(projectVideo[currentProjectIndex] == 'true'){
+    console.log("!!");
+    addProjectVideo();
+    projectDiv.style.background = ''
+  }
+  else{
+    projectDiv.style.background = "url("+projectData[currentProjectIndex]+") no-repeat center";
+  }
+}
+
+function addProjectVideoOLD(){
+
+  projectVideoDiv = document.createElement('video');
+  projectVideoDiv.style.position = 'absolute';
+  projectVideoDiv.id = "projectVideoDiv"
+  projectVideoDiv.style.width = '100vw';
+  projectVideoDiv.style.height = '100vh'   //projectDivHeight + 'px';
+  projectVideoDiv.style.top = 0;
+  projectVideoDiv.style.left = 0;
+  projectVideoDiv.style.zIndex = 100;
+  projectVideoDiv.autoplay = true;
+  projectVideoDiv.poster = projectData[currentProjectIndex];
+  document.body.appendChild(projectVideoDiv);
+
+  videoSource = document.createElement("source");
+  videoSource.type = "video/mp4";
+  videoSource.src = projectVideoURL[currentProjectIndex];
+  projectVideoDiv.appendChild(videoSource);
+
+  if(currentProjectIndex == 0){
+    projectName.style.width = '100vw';
+    projectName.style.left = '0';
+    projectName.style.textAlign = 'center';
+    rgaOffice.style.display =  'none';
+    rgaCube.style.display = 'none';
+    projectVideoDiv.loop = true;
+  }
+  else{
+    projectVideoDiv.loop = false;
+  }
+
+}
+
+
+function setPlaylistTimeoutOLD(){
+
+  // CLEAR THE TIMEOUT IF IT EXISTS.
+
+  clearTimeoutCalled(playlistTimeout);
+
+  // DETERMINE PLAYLIST TIMEOUT;
+
+  var itemTimeout = 0;
+
+  if(projectVideo[currentProjectIndex] == 'true'){
+    checkVideoState();
+    // itemTimeout = projectVideoDiv.duration * 1000; // add 5 seconds to the timeout
+  }
+  else{
+    itemTimeout = imageTimeoutTime;
+    playlistTimeout = setTimeout(function(){
+      console.log("COUNT " + playedPlaylistProjectCount)
+      nextItemOnPlaylist();
+    }, itemTimeout);
+  }
+
+  console.log("TIMEOUT " + itemTimeout);
+
 }

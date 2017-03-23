@@ -8,18 +8,19 @@ var bucketName = 'prototypedisplay';
 var bucketRegion = 'us-east-1'; // http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 var IdentityPoolId = 'us-east-1:112d0d2f-84a0-4eb1-bb48-f8723b8edd1e';
 var s3;
-var baseURL = '	https://s3.amazonaws.com/prototypedisplay/'
+var baseURL = 'https://s3.amazonaws.com/prototypedisplay/'
 
 
 // PROTOTYPE DISPLAY PROJECT
 
 class prototypeDisplayProject {
 
-  constructor(title, office, imageURL, video, videoURL){
+  constructor(title, office, projectInformation, imageURL, video, videoURL){
 
     this.title = title;
-    this.office = office
-    this.imageURL = imageURL
+    this.office = office;
+    this.projectInformation = projectInformation;
+    this.imageURL = imageURL;
     this.video = video;
     this.videoURL = videoURL;
 
@@ -98,6 +99,7 @@ awsS3.prototype.getInformationForAllProjects = function(displayList, projectFold
   var projectInformation =[];
   var projectVideo = [];
   var jsonCount = 0;
+  var prototypeStudioProjects = [];
 
   console.log(displayList.projects);
 
@@ -108,28 +110,33 @@ awsS3.prototype.getInformationForAllProjects = function(displayList, projectFold
   projectInformation.push('');
   projectVideo.push('true');
 
-  // get JSON files
+  var firstHero = new prototypeDisplayProject('Tap Tablet to Start', 'R/GA', '', baseURL + '00_Reel/hero.jpg', 'true', baseURL + '00_Reel/hero.mp4');
+  prototypeStudioProjects.push(firstHero);
 
-  getJSONFiles(1, displayList.projects, projectFolders,baseURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
 
+  getJSONFiles(1, displayList.projects, projectFolders,baseURL, projectTitles, rgaOffices, projectInformation, projectVideo, prototypeStudioProjects, callbackFunction);
 }
 
-function getJSONFiles(x, displayList, projectFolders, aURL, projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction){
+function getJSONFiles(x, displayList, projectFolders, aURL, projectTitles, rgaOffices, projectInformation, projectVideo, prototypeStudioProjects, callbackFunction){
 
   if(x < (projectFolders.length)){
     var url = baseURL + projectFolders[x].toString() + 'info.json'
 
     $.getJSON(url, function(data){
 
+      console.log("DISPLAY LIST : " + displayList);
+
       console.log(data);
       for(i =0; i<displayList.length; i++){
-        if(displayList[i] == data.id){
+        if(displayList[i] == data.projectTitle){
 
           projectTitles.push(data.projectTitle);
           rgaOffices.push(data.rgaOffice);
           projectInformation.push(data.projectInformation);
           projectVideo.push(data.video);
 
+          var currentProject = new prototypeDisplayProject(data.projectTitle, data.rgaOffice, data.projectInformation, '', data.video, '');
+          prototypeStudioProjects.push(currentProject);
           break;
         }
         else{
@@ -137,18 +144,22 @@ function getJSONFiles(x, displayList, projectFolders, aURL, projectTitles, rgaOf
         }
       }
     }).then(function(){
-      getJSONFiles(x+1, displayList, projectFolders,baseURL,projectTitles, rgaOffices, projectInformation, projectVideo, callbackFunction);
+
+      getJSONFiles(x+1, displayList, projectFolders,baseURL,projectTitles, rgaOffices, projectInformation, projectVideo, prototypeStudioProjects, callbackFunction);
     });
 
   }
   else{
-    callbackFunction(projectTitles, rgaOffices, projectInformation, projectVideo);
+    var secondHero = new prototypeDisplayProject('Tap Tablet to Start', 'R/GA', '', 'https://s3.amazonaws.com/prototypedisplay/00_Reel/hero.jpg', 'true',  'https://s3.amazonaws.com/prototypedisplay/00_Reel/heroII.mp4');
+    prototypeStudioProjects.push(secondHero);
+    console.log(secondHero);
+    callbackFunction(projectTitles, rgaOffices, projectInformation, projectVideo, prototypeStudioProjects);
   }
 
 
 }
 
-awsS3.prototype.getProjectURLS = function(projectFolders, projectVideo, callbackFunction){
+awsS3.prototype.getProjectURLS = function(projectFolders, projectVideo, prototypeProjects, callbackFunction){
 
 
   var projectData = [];
@@ -170,19 +181,23 @@ awsS3.prototype.getProjectURLS = function(projectFolders, projectVideo, callback
         var projectDataURL = baseURL + projectFolders[i].toString() + 'webContent/hero.jpg';
         projectData.push(projectDataURL);
 
+        prototypeProjects[i].imageURL = projectDataURL;
+
         console.log(projectVideo)
 
           if(projectVideo[i] == "true"){
             var projectVideoLink = baseURL + projectFolders[i].toString() + 'webContent/hero.mp4';
+            prototypeProjects[i].videoURL = projectVideoLink;
             projectVideoURL.push(projectVideoLink);
           }
           else{
+            prototypeProjects[i].videoURL = 'null';
             projectVideoURL.push('null');
           }
       }
 
       if(i == (projectFolders.length - 1)){
-        callbackFunction(projectData, projectVideoURL);
+        callbackFunction(projectData, projectVideoURL, prototypeProjects);
       }
     }
 }
@@ -207,5 +222,78 @@ awsS3.prototype.matchProjectNameToIndex = function(projectTitles, projectName, c
     }
   }
 }
+
+
+awsS3.prototype.getPlaylists = function(callbackFunction){
+
+  var projectPlaylists = {};
+  var prototypeDisplayPlaylists = [];
+
+  var url = "	https://s3.amazonaws.com/prototypedisplay/projectPlaylists.json"
+
+  $.getJSON(url, function(data){
+    projectPlaylists = data;
+  }).then(function(){
+
+    console.log(projectPlaylists.playlist);
+
+    for (playlist in projectPlaylists.playlist){
+
+      var newPlaylist = new prototypeDisplayPlaylist(projectPlaylists.playlist[playlist].title, projectPlaylists.playlist[playlist].projects)
+      prototypeDisplayPlaylists.push(newPlaylist);
+    }
+
+    callbackFunction(prototypeDisplayPlaylists);
+  });
+}
+
+awsS3.prototype.getProjectFromDisplayList = function(prototypeDisplayList, playlistList, callbackFunction){
+
+  var newPlayListList = [];
+
+  newPlayListList.push(new prototypeDisplayPlaylist("Reel Playlist", [prototypeDisplayList[0], prototypeDisplayList[prototypeDisplayList.length -1]]));
+
+
+  // CREATE THE
+
+  for(playlistCount =0; playlistCount<playlistList.length; playlistCount++){
+    console.log("!")
+
+    var newPlaylistProjects = [];
+
+    var currentPlaylist = playlistList[playlistCount].projects;
+
+      for(project in currentPlaylist){
+
+        for(i = 0; i<prototypeDisplayList.length; i++){
+
+          console.log(prototypeDisplayList[i].title)
+          console.log(currentPlaylist[project]);
+          if(prototypeDisplayList[i].title == currentPlaylist[project]){
+            console.log("!")
+              newPlaylistProjects.push(prototypeDisplayList[i]);
+            }
+          }
+          console.log("!!")
+          console.log(newPlaylistProjects);
+
+        }
+        newPlayListList.push(new prototypeDisplayPlaylist(playlistList[playlistCount].title, newPlaylistProjects));
+
+        console.log("check")
+        console.log(playlistCount)
+        console.log(playlistList.length);
+
+        if(playlistCount == (playlistList.length - 1)){
+          console.log("HERE WE ARE");
+
+        callbackFunction(newPlayListList);
+        }
+
+    }
+
+
+}
+
 
   //https://s3.amazonaws.com/prototypedisplay/01_Tango/info.json
