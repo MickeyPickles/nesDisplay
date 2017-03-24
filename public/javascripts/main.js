@@ -32,7 +32,8 @@ var currentPlaylistIndex = 0;
 // TIMEOUT VARIABLES
 
 var reelTimeout = '';
-var reelTimeoutTime = 2000;
+var reelTimeoutTime = 10000;
+var pausePlayTimeoutTime = 120000;
 var playlistTimeout = '';
 var transitionTimeout = '';
 var playedPlaylistProjectCount = 0;
@@ -42,7 +43,7 @@ var videoTimeoutTime = 0;
 var transitionTime = 1000;
 
 //  SOCKET IO VARIABLES
-var socket = io('http://localhost:5000');
+var socket = io('http://sample-env-1.c8yskffcqp.us-east-1.elasticbeanstalk.com');  //'http://sample-env-1.c8yskffcqp.us-east-1.elasticbeanstalk.com/');
 
 
 // DIVS
@@ -83,7 +84,7 @@ var transitionInfoDiv;
       console.log("project");
       console.log(data);
 
-      clearTimeoutCalled(reelTimeout);
+      clearAllTimeOuts()
 
       awsS3.matchProjectNameToIndex(projectTitles, data.toString(), function(projectFound, index){
         console.log(projectFound)
@@ -108,7 +109,7 @@ var transitionInfoDiv;
 
       console.log(data);
 
-      clearTimeoutCalled(reelTimeout);
+      clearAllTimeOuts();
       showTransitionSlide();
 
       currentProjectIndex = data.index;
@@ -397,8 +398,8 @@ function setOfficeAttributedString(){
   var attributedString = currentPlaylist.projects[currentProjectIndex].office;
   attributedString = attributedString.replace('R/GA', '<span class="rga">R/GA</span>');
 
-  if(attributedString.includes('x')){
-    attributedString = attributedString.replace('x', '<span class="plus">x</span>');
+  if(attributedString.includes('+')){
+    attributedString = attributedString.replace('+', '<span class="plus">+</span>');
   }
   console.log(attributedString);
 
@@ -434,7 +435,9 @@ function nextItemOnPlaylist(){
   playedPlaylistProjectCount += 1;
   currentProjectIndex += 1;
 
+
   if(playedPlaylistProjectCount < (currentPlaylist.projects.length)){
+
 
     if(currentProjectIndex > (currentPlaylist.projects.length - 1)){
       currentProjectIndex = 0;
@@ -478,11 +481,10 @@ function setPlaylistTimeout(){
     playlistTimeout = setTimeout(function(){
       console.log("COUNT " + playedPlaylistProjectCount)
       nextItemOnPlaylist();
-
+      console.log("TIMEOUT " + itemTimeout);
     }, itemTimeout);
   }
 
-  console.log("TIMEOUT " + itemTimeout);
 
 }
 
@@ -492,11 +494,17 @@ function clearTimeoutCalled(timeoutName){
   }
 }
 
+function clearAllTimeOuts(){
+  clearTimeout(reelTimeout);
+  clearTimeout(playlistTimeout);
+  clearTimeout(transitionTimeout);
+}
+
 // MARK: PAUSE/PLAY TIMEOUT FUNCTIONS
 
 function pauseVideoTimeout(){
   clearTimeoutCalled(playlistTimeout);
-  resetReelTimeout();
+  setPausePlayReturnToReelTimeout();
   console.log("PAUSE");
 
 }
@@ -507,6 +515,7 @@ function restartVideoTimeout(){
   // DETERMINE REMAINING TIME LEFT OF VIDEO AND SUBTRACT IT FROM THE TOTAL AND ADD 4.5 SECONDS.
   console.log("PLAY");
   var remainingVideoTimeout = (projectVideoDiv.duration - projectVideoDiv.currentTime)*1000;
+  console.log(remainingVideoTimeout)
   playlistTimeout = setTimeout(function(){
     nextItemOnPlaylist();
   }, remainingVideoTimeout);
@@ -520,17 +529,22 @@ function resetReelTimeout(){
 
 }
 
+function setPausePlayReturnToReelTimeout(){
+    reelTimeout = setTimeout(function(){
+      socket.emit("playReel", currentProjectIndex);
+    }, pausePlayTimeoutTime);
+}
 
 function setReturnToReelTimeout(){
-  reelTimeout = setTimeout(function(){
-    socket.emit("playReel", currentProjectIndex);
-
-  }, reelTimeoutTime);
+    reelTimeout = setTimeout(function(){
+      socket.emit("playReel", currentProjectIndex);
+    }, reelTimeoutTime);
 }
 
 function playReel(){
   console.log("PLAY REEL");
   currentProjectIndex = 0;
+  playedPlaylistProjectCount = 0;
   currentPlaylist = playlistList[0];
   setProjectInformation();
   setPlaylistTimeout();

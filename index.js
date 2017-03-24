@@ -15,6 +15,8 @@ app.use(express.static('client'));
 
 io.on('connection', function(socket){
 
+  console.log("CONNECTION MADE W/" + socket.id);
+
   sockets.push(socket.id);
   mainSocket = socket;
 
