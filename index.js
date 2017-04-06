@@ -1,6 +1,12 @@
 var express = require('express');
 var app     = express();
 var port    = process.env.PORT || 5000;
+//pickle is adding this
+var bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+app.use(bodyParser.json());
 
 // SOCKET IO
 var server  = require('http').createServer(app);
@@ -147,12 +153,12 @@ app.get('/', function(request, response) {
   response.render('pages/index.ejs');
 });
 
-app.post('/displayCommand',function(req,res){
+app.post('/displayCommand',function(req, res, next){
 
-  console.log(req.body);
-  // io.emit('playPlayListAtIndex',req.body);
-   io.emit('playPlayListAtIndex',{'playlist': "Top 5", "index": "0"});
-  res.json({});
+  var data = req.body;
+  //console.log("Getting this : " + JSON.stringify(req.body));
+   io.emit('playPlayListAtIndex',data);
+  res.json({"success":"true"});
   // io.emit("playPlayListAtIndex", currentProjectIndex);
 });
 
