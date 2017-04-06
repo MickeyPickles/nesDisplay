@@ -26,6 +26,8 @@ var currentPlaylist = 0;
 var currentProjectIndex = 0;
 var playedPlaylistProjectCount = 0;
 
+var singleProject = 0
+
 
 //***************************************** TIMEOUT VARIABLES *************************************** //
 
@@ -128,25 +130,22 @@ var transitionInfoDiv;            // USED AS A WHITE BAR DIV TO EASE THE TRANSIT
 
       clearAllTimeOuts()    // CLEAR ALL TIMEOUTS
 
-
-      // CALL AWS VARIABLE FUNCTION THAT DETERMINES IF THE PROJECT EXISTS AND PLAYS.
-      awsS3.matchProjectNameToIndex(projectTitles, data.toString(), function(projectFound, index){
-        console.log(projectFound)
-        if(projectFound == true){
-          currentProjectIndex = index;
-          showTransitionSlide();
-          // setProjectInformation();
-
-          // playlist timeout and variables
-          setTimeout(function(){
-            playedPlaylistProjectCount = 0;
-            setPlaylistTimeout();
-          },1000);
+      for(i=0; i<prototypeDisplayList.length; i++){
+        console.log("Checking");
+        console.log(prototypeDisplayList[i].title)
+        if(prototypeDisplayList[i].title == data){
+            console.log("Found");
+            singleProject = prototypeDisplayList[i];
+            showTransitionSlide();
+            setTimeout(function(){
+              playedPlaylistProjectCount = 0;   // SET THE PLAYLIST PROJECT COUNT TO 0, TO ALLOW THE PLAYLIST TO LOOP
+              setSingleProjectInformation();          // SET THE PROJECT INFORMATION FOR RELEVANT PLAYLIST PROJECT
+              setSingleProjectTimeout();             // SET THE PLAYLIST TIMEOUT
+            },1000);
+            break;
         }
-        else{
-          // PROJECT NOT FOUND
-        }
-      });
+      }
+
     });
 
     /*
@@ -631,6 +630,139 @@ function setPlaylistTimeout(){
 
 
 }
+
+//**************************************************************************************************** //
+//******************************* SINGLE PROJECT FUNCTIONALITY *************************************** //
+//**************************************************************************************************** //
+
+function setSingleProjectInformation(){
+
+  // NOTE: THE CURRENT PLAYLIST SHOULD ALWAYS BE SET.
+    projectName.innerHTML = singleProject.title;    // SET THE TITLE BASED ON THE RELEVANT PROJECT AND PLAYLIST
+    rgaOffice.innerHTML =   setSingleProjectOfficeAttributedString(); // STYLIZE THE OFFICE STRING
+
+
+    // REMOVE THE PROJECT DIV TO ENSURE THAT THE VIDEO RESETS CORRECTLY, EVEN IF ITS REPLAYING THE RIGHT VIDEO.
+    if(document.getElementById('projectVideoDiv') != null){
+      removeProjectVideo();
+    }
+
+    // ADD A PROJECT VIDEO DIV IF VIDEO IS REQUIRED
+    if(singleProject.video == 'true'){
+      addSingleProjectVideo();
+      projectDiv.style.background = ''
+    }
+    else{
+      projectDiv.style.background = "url("+singleProject.imageURL+") no-repeat center";
+    }
+}
+
+function setSingleProjectOfficeAttributedString(){
+  console.log("SINGLE PROJECT ATT STRING");
+  // STYLIZE R/GA
+  var attributedString = singleProject.office;
+  attributedString = attributedString.replace('R/GA', '<span class="rga">R/GA</span>');
+
+  // STYLIZE A PLUS IF IT EXISTS.
+  if(attributedString.includes('+')){
+    attributedString = attributedString.replace('+', '<span class="plus">+</span>');
+  }
+
+  return attributedString;
+}
+
+function addSingleProjectVideo(){
+
+  console.log("Single Project Video");
+
+  // ADD THE STYLIZED VIDEO DIV TO THE DISPLAY
+  projectVideoDiv = document.createElement('video');
+  projectVideoDiv.style.position = 'absolute';
+  projectVideoDiv.id = "projectVideoDiv"
+  projectVideoDiv.style.width = '100vw';
+  projectVideoDiv.style.height = '100vh'   //projectDivHeight + 'px';
+  projectVideoDiv.style.top = 0;
+  projectVideoDiv.style.left = 0;
+  projectVideoDiv.style.zIndex = 100;
+  projectVideoDiv.autoplay = true;
+
+  projectVideoDiv.poster = singleProject.imageURL;
+
+  document.body.appendChild(projectVideoDiv);
+
+
+  // CREATE A VIDEO SOURCE AND ADD THE RELEVANT VIDEO.
+  videoSource = document.createElement("source");
+  videoSource.type = "video/mp4";
+  if(currentPlaylist != 0) {
+    videoSource.src = singleProject.videoURL;
+  }
+  else{
+    videoSource.src = singleProject.videoURL;
+  }
+  projectVideoDiv.appendChild(videoSource);
+
+  projectName.style.width = 'auto';
+  projectName.style.left = '2.5vw';
+  projectName.style.textAlign = 'left';
+  rgaOffice.style.display =  ''
+  rgaOffice.style.textAlign = 'right';
+  rgaCube.style.display = '';
+  setSingleProjectTimeout();
+}
+
+function setSingleProjectTimeout(){
+
+  console.log("SETTING");
+
+  // CLEAR THE TIMEOUT IF IT EXISTS.
+
+  clearTimeout(playlistTimeout);
+
+  // DETERMINE PLAYLIST TIMEOUT;
+
+  var itemTimeout = 0;
+
+  // CHECK IF A VIDEO EXISTS AND IF SO, SET THE TIMEOUT AFTER ITS LOADED.
+  if(singleProject.video == 'true'){
+    console.log("!");
+    checkSingleVideoState();
+  }
+  // IF NOT, SET THE IMAGE TIMEOUT AND CALL THE NEXT ITEM ON PLAYLIST AFTER THE TIMEOUT.
+  else{
+    itemTimeout = imageTimeoutTime;
+    playlistTimeout = setTimeout(function(){
+      resetReelTimeout();
+    }, itemTimeout);
+  }
+
+}
+
+function checkSingleVideoState(){
+  // CHECK IF VIDEO IS LOADING
+  if(projectVideoDiv.readyState == 4){
+    restartSingleVideoTimeout()   // SET THE VIDEO TIMEOUT
+  }
+  // SET A TIMEOUT OF 50MS AND TRY AGAIN.
+  else{
+    setTimeout(function(){
+      checkSingleVideoState();
+    }, 50);
+  }
+}
+
+function restartSingleVideoTimeout(){
+  clearTimeoutCalled(reelTimeout);
+
+  // DETERMINE REMAINING TIME LEFT OF VIDEO AND SUBTRACT IT FROM THE TOTAL
+  var remainingVideoTimeout = (projectVideoDiv.duration - projectVideoDiv.currentTime)*1000;
+  console.log(remainingVideoTimeout)
+  // SET NEW TIMEOUT
+  playlistTimeout = setTimeout(function(){
+    resetReelTimeout();
+  }, remainingVideoTimeout);
+}
+
 
 //**************************************************************************************************** //
 //************************************** TIMEOUT FUNCTIONALITY *************************************** //
