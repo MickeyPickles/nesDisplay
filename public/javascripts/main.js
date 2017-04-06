@@ -37,7 +37,7 @@ var playlistTimeout = '';
 var transitionTimeout = '';
 
 // VARIABLES INDICATING THE SPECIFIC TIMES THAT EACH TIMEOUT SHOULD TAKE.
-var reelTimeoutTime = 10000;        // TIME AFTER A COMPLETE PLAYLIST BEFORE RETURNING TO THE REEL
+var reelTimeoutTime = 3000;        // TIME AFTER A COMPLETE PLAYLIST BEFORE RETURNING TO THE REEL
 var pausePlayTimeoutTime = 120000;  // TIME AFTER A PAUSE BEFORE RETURNING TO THE REEL
 
 var imageTimeoutTime = 20000;       // TIME AN IMAGE SHOULD BE SHOWN BEFORE GOING TO THE NEXT PROJECT / REEL
@@ -46,7 +46,7 @@ var transitionTime = 1000;          // TRANSITION TIME BETWEEN PROJECTS.
 
 //***************************************** SOCKET IO VARIABLES *************************************** //
 
-var socket = io('http://sample-env-1.c8yskffcqp.us-east-1.elasticbeanstalk.com/');  // THE STRING IS THE WEBPAGE THAT WE ARE USING.
+var socket = io('localhost:5000');  // THE STRING IS THE WEBPAGE THAT WE ARE USING. http://sample-env-1.c8yskffcqp.us-east-1.elasticbeanstalk.com/
 
 
 //***************************************** FRONT END DISPLAY ELEMENTS *************************************** //
@@ -362,6 +362,7 @@ function initPage(){
 
 function playReel(){
   console.log("PLAY REEL");
+  clearAllTimeOuts();
   currentProjectIndex = 0;          // SET THE CURRENT PROJECT INDEX TO 0
   playedPlaylistProjectCount = 0;   // SET THE CURRENT PLAYLIST COUNT TO 0
   currentPlaylist = playlistList[0];  // SET THE CURRENT PLAYLIST TO THE REEL PLAYLIST
@@ -453,7 +454,7 @@ function setOfficeAttributedString(){
 //**************************************************************************************************** //
 
 /*
-  @Function: setOfficeAttributedString
+  @Function: addProjectVideo
   A FUNCTION THAT ADDS A VIDEO DIV WITH THE CORRECT PROJECT VIDEO AND POSTER IMAGE
 */
 

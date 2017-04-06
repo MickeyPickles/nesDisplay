@@ -147,6 +147,15 @@ app.get('/', function(request, response) {
   response.render('pages/index.ejs');
 });
 
+app.post('/displayCommand',function(req,res){
+
+  console.log(req.body);
+  // io.emit('playPlayListAtIndex',req.body);
+   io.emit('playPlayListAtIndex',{'playlist': "Top 5", "index": "0"});
+  res.json({});
+  // io.emit("playPlayListAtIndex", currentProjectIndex);
+});
+
 // app.listen(app.get('port'), function() {
 //   console.log('Node app is running on port', app.get('port'));
 // });
