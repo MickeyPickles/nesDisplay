@@ -153,11 +153,29 @@ app.get('/', function(request, response) {
   response.render('pages/index.ejs');
 });
 
+app.post('/particleWebhook',function(req, res, next){
+  var data = req.body;
+  console.log("We have something from particle :" + JSON.stringify(data));
+  res.send("we good");
+});
+
+
+
+
 app.post('/displayCommand',function(req, res, next){
 
   var data = req.body;
+
+  if(data.project) {
+    io.emit('project',data.project);
+    console.log("emmiting project");
+  } else {
+    io.emit('playPlayListAtIndex',data);
+    console.log("emmiting playlist");
+
+  }
+
   //console.log("Getting this : " + JSON.stringify(req.body));
-   io.emit('playPlayListAtIndex',data);
   res.json({"success":"true"});
   // io.emit("playPlayListAtIndex", currentProjectIndex);
 });
