@@ -48,7 +48,7 @@ var transitionTime = 1000;          // TRANSITION TIME BETWEEN PROJECTS.
 
 //***************************************** SOCKET IO VARIABLES *************************************** //
 
-var socket = io('localhost:5000');  // THE STRING IS THE WEBPAGE THAT WE ARE USING. http://sample-env-1.c8yskffcqp.us-east-1.elasticbeanstalk.com/
+var socket = io(window.location.host);  // THE STRING IS THE WEBPAGE THAT WE ARE USING. http://sample-env-1.c8yskffcqp.us-east-1.elasticbeanstalk.com/
 
 
 //***************************************** FRONT END DISPLAY ELEMENTS *************************************** //
@@ -69,6 +69,8 @@ var transitionInfoDiv;            // USED AS A WHITE BAR DIV TO EASE THE TRANSIT
 
 
 (function(){
+
+
 
 
 //***************************************** SOCKET FUNCTIONS *************************************** //
