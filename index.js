@@ -154,8 +154,21 @@ app.get('/', function(request, response) {
 });
 
 app.post('/particleWebhook',function(req, res, next){
-  var data = req.body;
-  console.log("We have something from particle :" + JSON.stringify(data));
+  var dataObj = req.body;
+  var projectName;
+  //var myData = JSON.parse(dataString);
+  //console.log("We have something from particle :" + dataObj.buttonAction);
+  if(dataObj.lastRFID == "testHu") {
+    //console.log("Samsung Hu");
+    projectName = "Samsung Hu";
+  } else if(dataObj.lastRFID == "testTango") {
+    //console.log("Google Tango");
+    projectName = "Google Tango";
+
+  }
+  if(projectName) {
+    io.emit('project',projectName);
+  }
   res.send("we good");
 });
 
