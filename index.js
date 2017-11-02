@@ -118,6 +118,13 @@ io.on('connection', function(socket){
     io.emit('playReel', data);
   });
 
+
+  socket.on('playNES', function(data){
+    // BROADCAST 'PLAY REEL' EVENT AND ITS DATA TO ALL DEVICES.
+    io.emit('playNES', data);
+  });
+
+
   /*
   SOCKET IO COMMAND: 'playPlayListAtIndex'
 
@@ -183,13 +190,15 @@ app.post('/displayCommand',function(req, res, next){
 
   var data = req.body;
 
-  if(data.project) {
+  if(data.nesGame) {
+    io.emit('playNES',data.nesGame);
+    console.log("we have a game");
+  } else if(data.project) {
     io.emit('project',data.project);
     console.log("emmiting project");
   } else {
     io.emit('playPlayListAtIndex',data);
     console.log("emmiting playlist");
-
   }
 
   //console.log("Getting this : " + JSON.stringify(req.body));

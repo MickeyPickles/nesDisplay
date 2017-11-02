@@ -1,5 +1,7 @@
 // SIZE VARIABLES
 
+var NES_IFRAME_ID='nesIFrame';
+
 var viewHeight = window.innerHeight;
 var viewWidth = window.innerWidth;
 
@@ -108,8 +110,21 @@ var transitionInfoDiv;            // USED AS A WHITE BAR DIV TO EASE THE TRANSIT
     SENDER: IPAD / DISPLAY
     */
 
+
+    socket.on('playNES', function(data){
+      console.log(data);
+      clearAllTimeOuts()
+      console.log("In PLAY NES")
+        //<iframe src="http://192.168.0.1/login.php" style="border: 0; position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%">
+     createNESIframe(data);
+    });
+
+
+
+
     socket.on('playReel', function(data){
       console.log(data);
+      deleteNESIframe();
       playReel();
     });
 
@@ -129,6 +144,8 @@ var transitionInfoDiv;            // USED AS A WHITE BAR DIV TO EASE THE TRANSIT
     socket.on('project', function(data){
       console.log("project");
       console.log(data);
+
+      deleteNESIframe()
 
       clearAllTimeOuts()    // CLEAR ALL TIMEOUTS
 
@@ -161,7 +178,7 @@ var transitionInfoDiv;            // USED AS A WHITE BAR DIV TO EASE THE TRANSIT
     socket.on('playPlayListAtIndex', function(data){
 
       console.log(data);
-
+      deleteNESIframe();
       clearAllTimeOuts();       // CLEAR ALL TIMEOUTS
       showTransitionSlide();    // SHOW TRANSITION SLIDE
 
@@ -362,6 +379,7 @@ function initPage(){
 */
 
 function playReel(){
+  deleteNESIframe();
   console.log("PLAY REEL");
   clearAllTimeOuts();
   currentProjectIndex = 0;          // SET THE CURRENT PROJECT INDEX TO 0
@@ -855,4 +873,31 @@ function setReturnToReelTimeout(){
     reelTimeout = setTimeout(function(){
       socket.emit("playReel", currentProjectIndex);
     }, reelTimeoutTime);
+}
+
+// IFRAME FUNCTIONS
+
+function deleteNESIframe() {
+  if(document.getElementById(NES_IFRAME_ID)) {
+    document.getElementById(NES_IFRAME_ID).remove();
+  }
+}
+
+function createNESIframe(nesGame) {
+  console.log('creating iframe');
+  var iframe = document.createElement('iframe');
+  iframe.id = NES_IFRAME_ID;
+  iframe.src = encodeURI('http://nes.proto.rgadev.com/run/'+nesGame);
+  //iframe.src = encodeURI('http://mickeypickles.com');
+
+  iframe.style.position = 'absolute';
+  iframe.style.width = '100vw';
+  iframe.style.height = '100vh';
+  iframe.style.zIndex = '1000';
+  iframe.style.top = '0';
+  iframe.style.left = '0';
+
+  deleteNESIframe();
+  document.body.appendChild(iframe);
+  removeProjectVideo();
 }
