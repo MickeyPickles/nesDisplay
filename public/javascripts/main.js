@@ -899,5 +899,6 @@ function createNESIframe(nesGame) {
 
   deleteNESIframe();
   document.body.appendChild(iframe);
+  document.getElementById(NES_IFRAME_ID).focus();
   removeProjectVideo();
 }
