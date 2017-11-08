@@ -166,20 +166,40 @@ app.get('/', function(request, response) {
 
 app.post('/particleWebhook',function(req, res, next){
   var dataString = req.body.data;
-  var projectName;
+  var projectName, nesGameName;
   var dataObj = JSON.parse(dataString);
-  //console.log("We have something from particle :" + dataObj.buttonAction);
-  if(dataObj.lastRFID == "66006C451E51") {
-    console.log("Samsung Hu");
+  console.log("We have something from particle :" + dataObj);
+  if(dataObj.lastRFID == "66006C338AB3") {
+    //console.log("Samsung Hu");
     projectName = "Samsung Hu";
   } else if(dataObj.lastRFID == "66006C3A4A7A") {
-    console.log("Google Tango");
+    //console.log("Google Tango");
     projectName = "Google Tango";
-
+  } else if(dataObj.lastRFID == "6A003E398AE7") {
+    //console.log("Google Tango");
+    projectName = "NikeiD VR";
+  } else if(dataObj.lastRFID == "66006C451E51") {
+    //console.log("Google Tango");
+    nesGameName = "Super%20Mario%20Bros.%203%20(U)%20(PRG1)%20%5B!%5D.nes";
+  } else if(dataObj.lastRFID == "6A003E37583B") {
+    //console.log("Google Tango");
+    nesGameName = "Legend%20of%20Zelda%2C%20The%20(U)%20(PRG1).nes";
   }
+//66006C338AB3 Samsung Hu
+//66006C3A4A7A Tango
+//6A003E398AE7 Nike ID
+//66006C451E51 Mario 3
+//6A003E37583B Zelda!
+//Samsung Move to Play
+//Verizon Open Innovation
+
+
   if(projectName) {
     io.emit('project',projectName);
+  } else if (nesGameName) {
+    io.emit('playNES', nesGameName);
   }
+
   res.send("we good");
 });
 
