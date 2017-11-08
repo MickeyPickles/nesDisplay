@@ -168,8 +168,14 @@ app.post('/particleWebhook',function(req, res, next){
   var dataString = req.body.data;
   var projectName, nesGameName;
   var dataObj = JSON.parse(dataString);
+  var playPSReel = false;
   console.log("We have something from particle :" + dataObj);
-  if(dataObj.lastRFID == "66006C338AB3") {
+
+
+//{"data":"{\"buttonAction\":\"depressed\", \"lastRFID\":\"66006C3A4A7A\"}","ttl":60,"published_at":"2017-11-08T15:06:32.464Z","coreid":"29002a000b47353137323334","name":"prototype-nes"}/
+  if(dataObj.buttonAction == "depressed") {
+    playPSReel = true
+  } else if(dataObj.lastRFID == "66006C338AB3") {
     //console.log("Samsung Hu");
     projectName = "Samsung Hu";
   } else if(dataObj.lastRFID == "66006C3A4A7A") {
@@ -193,8 +199,9 @@ app.post('/particleWebhook',function(req, res, next){
 //Samsung Move to Play
 //Verizon Open Innovation
 
-
-  if(projectName) {
+  if(playPSReel) {
+    io.emit('playReel','');
+  } if(projectName) {
     io.emit('project',projectName);
   } else if (nesGameName) {
     io.emit('playNES', nesGameName);
