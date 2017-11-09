@@ -884,6 +884,7 @@ function deleteNESIframe() {
 }
 
 function createNESIframe(nesGame) {
+  clearAllTimeOuts();
   console.log('creating iframe');
   var iframe = document.createElement('iframe');
   iframe.id = NES_IFRAME_ID;
